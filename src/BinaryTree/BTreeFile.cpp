@@ -49,7 +49,8 @@ namespace Algorithm::BinaryTree{
         uint64_t itemMeio = input.quantity() / 2;
         u_int64_t pageIndex = itemMeio / PAGE_SIZE;
         
-        u_int64_t offsetNaPag = itemMeio % PAGE_SIZE;//item central da página do meio
+        //item central da página do meio
+        u_int64_t offsetNaPag = itemMeio % PAGE_SIZE;
         std::array<Item, PAGE_SIZE> page;
         page = input.GetPageAt(pageIndex);
         //inicializando valores
