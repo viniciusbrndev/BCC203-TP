@@ -4,8 +4,6 @@
 #include <iostream>
 #include <string>
 
-#include "BStarTree/BStarTree.hpp"
-#include "BTree/BTree.hpp"
 #include "BinaryTree/BTree.hpp"
 #include "Common.hpp"
 #include "File.hpp"
@@ -23,6 +21,33 @@ enum FileType : uint8_t {
     Descending = 2,
     Unordered = 3,
 };
+
+namespace {
+void PrintResults(
+    int key, const std::optional<Item>& result,
+    const std::chrono::duration<double, std::milli>& preprocessDuration,
+    const std::chrono::duration<double, std::milli>& searchDuration) {
+    if (!result.has_value()) {
+        Log::Info("Search finished: key " + std::to_string(key) + " not found");
+        std::cout << "Key not found\n";
+    } else {
+        Log::Info("Search finished: key " + std::to_string(key) + " found");
+        std::cout << "Found key: " << result.value() << "\n";
+    }
+
+    std::cout << "Preprocessing time: " << preprocessDuration.count()
+              << " ms\n";
+    std::cout << "Preprocessing reads from disk to RAM: "
+              << Metrics::Preprocessing().diskReads << "\n";
+    std::cout << "Preprocessing key comparisons: "
+              << Metrics::Preprocessing().keyComparisons << "\n";
+    std::cout << "Search time: " << searchDuration.count() << " ms\n";
+    std::cout << "Search reads from disk to RAM: "
+              << Metrics::Search().diskReads << "\n";
+    std::cout << "Search key comparisons: " << Metrics::Search().keyComparisons
+              << "\n";
+}
+}  // namespace
 
 int main(int argc, char* argv[]) {
     constexpr int requiredArgC = 5;
@@ -106,10 +131,13 @@ int main(int argc, char* argv[]) {
 
         Log::Info("Starting Indexed Sequential Access search for key " +
                   std::to_string(key));
+        Metrics::Reset();
+        Metrics::SetPhase(Phase::Preprocessing);
         const auto preprocessStart = std::chrono::high_resolution_clock::now();
         auto isa = Algorithm::IndexedSequentialAccess::ISA(file);
         const auto preprocessEnd = std::chrono::high_resolution_clock::now();
 
+        Metrics::SetPhase(Phase::Search);
         const auto searchStart = std::chrono::high_resolution_clock::now();
         const auto res = isa.Search(key);
         const auto searchEnd = std::chrono::high_resolution_clock::now();
@@ -119,29 +147,21 @@ int main(int argc, char* argv[]) {
         const std::chrono::duration<double, std::milli> searchDuration =
             searchEnd - searchStart;
 
-        if (!res.has_value()) {
-            Log::Info("Search finished: key " + std::to_string(key) +
-                      " not found");
-            std::cout << "Key not found\n";
-        } else {
-            Log::Info("Search finished: key " + std::to_string(key) + " found");
-            std::cout << "Found key: " << res.value() << "\n";
-        }
-
-        std::cout << "Preprocessing time: " << preprocessDuration.count()
-                  << " ms\n";
-        std::cout << "Search time: " << searchDuration.count() << " ms\n";
+        PrintResults(key, res, preprocessDuration, searchDuration);
         return 0;
     }
 
     if (method == Method::BinaryTree) {
         Log::Info("Starting Binary Tree search for key " + std::to_string(key));
+        Metrics::Reset();
+        Metrics::SetPhase(Phase::Preprocessing);
         const auto preprocessStart = std::chrono::high_resolution_clock::now();
-        auto binaryTree = Algorithm::BinaryTree::BTree(*file);
+        auto btree = Algorithm::BinaryTree::BTree(*file);
         const auto preprocessEnd = std::chrono::high_resolution_clock::now();
 
+        Metrics::SetPhase(Phase::Search);
         const auto searchStart = std::chrono::high_resolution_clock::now();
-        const auto res = binaryTree.Search(key);
+        const auto res = btree.Search(key);
         const auto searchEnd = std::chrono::high_resolution_clock::now();
 
         const std::chrono::duration<double, std::milli> preprocessDuration =
@@ -149,78 +169,7 @@ int main(int argc, char* argv[]) {
         const std::chrono::duration<double, std::milli> searchDuration =
             searchEnd - searchStart;
 
-        if (!res.has_value()) {
-            Log::Info("Search finished: key " + std::to_string(key) +
-                      " not found");
-            std::cout << "Key not found\n";
-        } else {
-            Log::Info("Search finished: key " + std::to_string(key) + " found");
-            std::cout << "Found key: " << res.value() << "\n";
-        }
-
-        std::cout << "Preprocessing time: " << preprocessDuration.count()
-                  << " ms\n";
-        std::cout << "Search time: " << searchDuration.count() << " ms\n";
-        return 0;
-    }
-
-    if (method == Method::BTree) {
-        Log::Info("Starting B Tree search for key " + std::to_string(key));
-        const auto preprocessStart = std::chrono::high_resolution_clock::now();
-        auto bTree = Algorithm::BTree::BTree(*file);
-        const auto preprocessEnd = std::chrono::high_resolution_clock::now();
-
-        const auto searchStart = std::chrono::high_resolution_clock::now();
-        const auto res = bTree.Search(key);
-        const auto searchEnd = std::chrono::high_resolution_clock::now();
-
-        const std::chrono::duration<double, std::milli> preprocessDuration =
-            preprocessEnd - preprocessStart;
-        const std::chrono::duration<double, std::milli> searchDuration =
-            searchEnd - searchStart;
-
-        if (!res.has_value()) {
-            Log::Info("Search finished: key " + std::to_string(key) +
-                      " not found");
-            std::cout << "Key not found\n";
-        } else {
-            Log::Info("Search finished: key " + std::to_string(key) + " found");
-            std::cout << "Found key: " << res.value() << "\n";
-        }
-
-        std::cout << "Preprocessing time: " << preprocessDuration.count()
-                  << " ms\n";
-        std::cout << "Search time: " << searchDuration.count() << " ms\n";
-        return 0;
-    }
-
-    if (method == Method::BStarTree) {
-        Log::Info("Starting B* Tree search for key " + std::to_string(key));
-        const auto preprocessStart = std::chrono::high_resolution_clock::now();
-        auto bStarTree = Algorithm::BStarTree::BStarTree(*file);
-        const auto preprocessEnd = std::chrono::high_resolution_clock::now();
-
-        const auto searchStart = std::chrono::high_resolution_clock::now();
-        const auto res = bStarTree.Search(key);
-        const auto searchEnd = std::chrono::high_resolution_clock::now();
-
-        const std::chrono::duration<double, std::milli> preprocessDuration =
-            preprocessEnd - preprocessStart;
-        const std::chrono::duration<double, std::milli> searchDuration =
-            searchEnd - searchStart;
-
-        if (!res.has_value()) {
-            Log::Info("Search finished: key " + std::to_string(key) +
-                      " not found");
-            std::cout << "Key not found\n";
-        } else {
-            Log::Info("Search finished: key " + std::to_string(key) + " found");
-            std::cout << "Found key: " << res.value() << "\n";
-        }
-
-        std::cout << "Preprocessing time: " << preprocessDuration.count()
-                  << " ms\n";
-        std::cout << "Search time: " << searchDuration.count() << " ms\n";
+        PrintResults(key, res, preprocessDuration, searchDuration);
         return 0;
     }
 

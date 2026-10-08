@@ -188,17 +188,19 @@ private:
      * @brief Insere todos os itens de uma página na árvore binária em disco.
      *
      * Itera sobre os itens contidos no array da página em memória e chama
-     * `InsertItem` individualmente para cada um deles.
+     * `InsertItem` individualmente para cada um deles até itemCount.
      *
      * @param file Fluxo do arquivo de árvore.
      * @param page Array contendo os itens da página carregada em memória.
      * @param pageIndex Índice da página correspondente no arquivo de dados.
+     * @param itemCount Quantidade de itens válidos na página.
      * @param lastNodeIndex Referência para o índice do último nó da árvore.
      */
     // 2
     static void InsertPage(std::fstream& file,
                            const std::array<Item, PAGE_SIZE>& page,
-                           uint64_t pageIndex, uint64_t& lastNodeIndex);
+                           uint64_t pageIndex, size_t itemCount,
+                           uint64_t& lastNodeIndex);
 
     /**
      * @brief Insere um item individual na árvore binária em disco.
@@ -212,7 +214,9 @@ private:
      * novo nó com `AppendNode`, atualiza o ponteiro `right` do nó pai e o salva
      * com `WriteNode`.
      * - Se a chave já existir no nó, a inserção é encerrada sem duplicar.
-     *
+     * - Se o nó atual possui filho à esquerda ou à direita, a função
+     * recursivamente ou iterativamente continua a busca no nó filho
+     * correspondente até encontrar a posição correta para inserção.
      * @param file Fluxo de leitura/escrita do arquivo da árvore binária.
      * @param item Item a ser inserido.
      * @param pageIndex Índice da página do arquivo de dados onde o item se

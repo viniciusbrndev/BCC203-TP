@@ -1,12 +1,14 @@
 #pragma once
 
 #include <array>
+#include <memory>
 #include <optional>
 
 #include "../Common.hpp"
 #include "../File.hpp"
 #include "../Item.hpp"
-#include "BStarTreeFile.hpp"
+#include "BStarTreeMemory.hpp"
+#include "IBStarTreeData.hpp"
 
 namespace Algorithm::BStarTree {
 class BStarTree {
@@ -14,9 +16,8 @@ public:
     /**
      * @brief Construtor da classe BStarTree.
      *
-     * Inicializa a árvore B* em disco a partir do arquivo binário de dados
-     * fornecido. Delega o carregamento/validação ou construção da árvore em
-     * disco para a classe BStarTreeFile.
+     * Inicializa a árvore B* em memória principal a partir do arquivo
+     * binário de dados fornecido (BStarTreeMemory).
      *
      * @param input Referência para o arquivo binário de dados de entrada.
      */
@@ -31,8 +32,8 @@ public:
     /**
      * @brief Realiza a busca de um item pela chave informada na árvore B*.
      *
-     * Consulta primeiramente o arquivo da árvore B* em disco através de
-     * `file_.Search(key)` para determinar em qual página do arquivo de dados a
+     * Consulta primeiramente a estrutura da árvore B* através de
+     * `tree_->Search(key)` para determinar em qual página do arquivo de dados a
      * chave reside:
      * - Se a chave não for encontrada na árvore B*, encerra a busca retornando
      * vazio.
@@ -49,20 +50,20 @@ public:
 
 private:
     File& input_;
-    BStarTreeFile file_;
+    std::unique_ptr<IBStarTreeData> tree_;
 
     /**
      * @brief Localiza uma entrada com a chave especificada dentro de um nó
      * folha da árvore B*.
      *
-     * @param node Nó recuperado do arquivo da árvore B*.
+     * @param node Nó recuperado da árvore B*.
      * @param key Chave procurada.
-     * @return std::optional<BStarTreeFile::Entry> A entrada contendo a chave e
+     * @return std::optional<IBStarTreeData::Entry> A entrada contendo a chave e
      * pageIndex, ou std::nullopt caso não esteja presente no nó.
      */
     // 3
-    static std::optional<BStarTreeFile::Entry> FindEntryInNode(
-        const BStarTreeFile::Node& node, int key);
+    static std::optional<IBStarTreeData::Entry> FindEntryInNode(
+        const IBStarTreeData::Node& node, int key);
 
     /**
      * @brief Realiza a busca pelo item desejado dentro de uma página carregada
